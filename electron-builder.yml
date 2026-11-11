@@ -108,5 +108,5 @@ npmRebuild: false
 # workflow uploads them, with the latest*.yml files the updater reads.
 publish:
   provider: github
-  owner: anmolkapil
-  repo: plexo
+  owner: RanaZaid26194
+  repo: Forked-Plexo

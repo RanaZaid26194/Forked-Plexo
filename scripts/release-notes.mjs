@@ -20,8 +20,8 @@ const require = createRequire(import.meta.url)
 const { PlexoDownloads: downloads } = require('../docs/downloads.js')
 const { PlexoChangelog: changelog } = require('../docs/changelog.js')
 
-const REPO = 'anmolkapil/plexo'
-const SITE = 'https://getplexo.app/'
+const REPO = 'RanaZaid26194/Forked-Plexo'
+const SITE = 'https://github.com/RanaZaid26194/Forked-Plexo'
 
 const [tag, arg] = process.argv.slice(2)
 if (!tag || !/^v\d/.test(tag)) {
@@ -47,6 +47,7 @@ const version = tag.slice(1)
 // RPM names use a dot before the architecture; other builds use a hyphen or underscore.
 const artifactName =
   /^plexo[-_](.+)(?:[-_](?:setup|x64|x86_64|amd64|arm64)\.(?:tar\.gz|[^.]+)|\.(?:x86_64|aarch64)\.rpm)$/
+const extensionArchive = /^plexo-extension-(.+)-(chrome|firefox)\.zip$/
 const dist = fileURLToPath(new URL('../dist/', import.meta.url))
 const files = readdirSync(dist)
   .filter((name) => name.match(artifactName)?.[1] === version && downloads.describe(name))
@@ -56,6 +57,51 @@ const files = readdirSync(dist)
     size: statSync(join(dist, name)).size,
     url: `https://github.com/${REPO}/releases/download/${tag}/${name}`
   }))
+const extensionFiles = readdirSync(dist)
+  .map((name) => ({ name, match: name.match(extensionArchive) }))
+  .filter(({ match }) => match?.[1] === version)
+  .sort((a, b) => a.name.localeCompare(b.name))
+  .map(({ name, match }) => ({
+    name,
+    browser: match[2],
+    path: join(dist, name),
+    size: statSync(join(dist, name)).size,
+    url: `https://github.com/${REPO}/releases/download/${tag}/${name}`
+  }))
+
+const BROWSER_LABEL = {
+  chrome: ['Chrome / Edge / Brave', 'Chromium-based browsers (MV3)'],
+  firefox: ['Firefox', 'Mozilla Firefox (MV3)']
+}
+
+function formatArchiveSize(bytes) {
+  if (!bytes) return ''
+  return bytes < 1048576
+    ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+    : downloads.formatSize(bytes)
+}
+
+function extensionMarkdown(items) {
+  if (items.length === 0) return ''
+  const rows = items.map((item) => {
+    const [browser, detail] = BROWSER_LABEL[item.browser]
+    return `| [${browser}](${item.url}) | ${detail} | ${formatArchiveSize(item.size)} |`
+  })
+  return [
+    '',
+    '',
+    '## Browser Extension',
+    '',
+    'Capture browser downloads automatically and pass cookies straight to Plexo:',
+    '',
+    '| Browser | Target | Size |',
+    '|---|---|---|',
+    ...rows,
+    '',
+    '- **Chrome / Edge / Brave:** Unzip the archive, open `chrome://extensions` (or `edge://extensions`), enable **Developer mode**, click **Load unpacked**, and select the extracted folder.',
+    '- **Firefox:** Open `about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on…**, and select the `.zip` file.'
+  ].join('\n')
+}
 
 if (files.length === 0) {
   console.error(
@@ -92,9 +138,16 @@ if (arg === '--files') {
     }
   }
   console.log(
-    [...files.map((file) => file.path), ...updateFiles.map((name) => join(dist, name))].join('\n')
+    [
+      ...files.map((file) => file.path),
+      ...extensionFiles.map((file) => file.path),
+      ...updateFiles.map((name) => join(dist, name))
+    ].join('\n')
   )
 } else {
-  console.log(whatsNew + '\n\n' + downloads.markdown(files, SITE))
-  console.error(`${files.length} files: ${files.map((file) => file.name).join(', ')}`)
+  console.log(
+    whatsNew + '\n\n' + downloads.markdown(files, SITE) + extensionMarkdown(extensionFiles)
+  )
+  const listed = [...files, ...extensionFiles]
+  console.error(`${listed.length} files: ${listed.map((file) => file.name).join(', ')}`)
 }

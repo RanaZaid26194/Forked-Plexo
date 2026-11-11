@@ -51,7 +51,7 @@ function prepareRelease(root: string, files: string[]): string {
   for (const file of ['scripts/release-notes.mjs', 'docs/downloads.js']) {
     copyFileSync(resolve(__dirname, '..', file), join(root, file))
   }
-  writeChangelog(root, ['1.0.0-rc.1', '1.0.0', '1.0.0-rc.11+build.1'])
+  writeChangelog(root, ['1.0.0-rc.1', '1.0.0', '1.0.0-rc.11+build.1', '1.0.0-rc.15-fork.1'])
   for (const file of files) writeFileSync(join(root, 'dist', file), 'build')
   return join(root, 'scripts/release-notes.mjs')
 }
@@ -93,7 +93,7 @@ test.describe('release artifact selection @smoke', () => {
         `## What's new\n\n- **Fixed: Fixes.** What changed in ${version}.\n\n## Downloads`
       )
       for (const file of expected) {
-        const url = `https://github.com/anmolkapil/plexo/releases/download/v${version}/${file}`
+        const url = `https://github.com/RanaZaid26194/Forked-Plexo/releases/download/v${version}/${file}`
         expect(notes.stdout.split(url + ')')).toHaveLength(2)
       }
       for (const file of [...otherBuilds, ...noise, ...updateFiles(version), ...channelFiles]) {
@@ -147,4 +147,39 @@ test.describe('release artifact selection @smoke', () => {
       expect(result.stderr).toContain(`No ${version} builds in dist/`)
     })
   }
+
+  test('matching browser extension archives appear in the upload list and release notes', () => {
+    const version = '1.0.0-rc.15-fork.1'
+    const root = test.info().outputPath('release')
+    const expected = builds(version)
+    const extZips = [
+      `plexo-extension-${version}-chrome.zip`,
+      `plexo-extension-${version}-firefox.zip`
+    ]
+    const wrongExtZips = [
+      'plexo-extension-1.0.0-rc.15-fork.10-chrome.zip',
+      'plexo-extension-1.0.0-rc.15-firefox.zip'
+    ]
+    const script = prepareRelease(root, [...expected, ...extZips, ...wrongExtZips])
+    writeChannelFiles(root, version)
+
+    const files = spawnSync(process.execPath, [script, `v${version}`, '--files'], {
+      encoding: 'utf8'
+    })
+    expect(files.status, files.stderr).toBe(0)
+    expect(files.stdout.trim().split('\n').sort()).toEqual(
+      [...expected, ...extZips, ...channelFiles].map((file) => join(root, 'dist', file)).sort()
+    )
+
+    const notes = spawnSync(process.execPath, [script, `v${version}`], { encoding: 'utf8' })
+    expect(notes.status, notes.stderr).toBe(0)
+    expect(notes.stdout).toContain('## Browser Extension')
+    for (const zipName of extZips) {
+      const url = `https://github.com/RanaZaid26194/Forked-Plexo/releases/download/v${version}/${zipName}`
+      expect(notes.stdout).toContain(url)
+    }
+    for (const wrong of wrongExtZips) {
+      expect(notes.stdout).not.toContain(wrong)
+    }
+  })
 })

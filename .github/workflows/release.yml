@@ -1,6 +1,6 @@
 name: Release
 
-# Pushing a version tag (git tag v1.0.0-rc.15 && git push origin v1.0.0-rc.15) builds every OS
+# Pushing a version tag (git tag v1.0.0-rc.15-fork.1 && git push origin v1.0.0-rc.15-fork.1) builds every OS
 # and leaves a draft GitHub Release. Apps only see it once the draft is published.
 #
 # Run by hand (gh workflow run release.yml --ref <branch>) it's a dry run: the same builds, signed
@@ -75,6 +75,10 @@ jobs:
           fi
           npm run build
           npx electron-builder ${{ matrix.target }} --publish never
+          # Package Chrome and Firefox companion extension archives once on Linux.
+          if [ "$RUNNER_OS" = Linux ]; then
+            npm run build:extension:zip
+          fi
           # electron-builder builds unsigned, quietly, when it finds no identity; such a build could
           # never install an update over a signed one.
           if [ -n "$signed" ]; then

@@ -10,6 +10,26 @@
 
   root.PlexoChangelog = [
     {
+      version: 'v1.0.0-rc.15-fork.1',
+      items: [
+        {
+          kind: 'new',
+          title: 'Graceful interface failover',
+          text: 'When a network adapter drops mid-download, active and queued chunks seamlessly move to surviving adapters instead of failing the download.'
+        },
+        {
+          kind: 'faster',
+          title: 'Dynamic speed- and latency-aware rebalancing',
+          text: 'Spare and hedge streams dynamically favor faster, lower-latency, healthier adapters in real time based on live throughput, RTT/jitter, and failure history.'
+        },
+        {
+          kind: 'new',
+          title: 'Packaged browser extensions',
+          text: 'Chrome/Edge/Brave and Firefox extension `.zip` bundles are attached directly to each release alongside the desktop installers.'
+        }
+      ]
+    },
+    {
       version: 'v1.0.0-rc.15',
       items: [
         {
